@@ -56,6 +56,17 @@ async function run() {
                 res.status(500).send({ message: "Server error, unable to fetch orders" });
             }
         });
+
+        app.post('/addburger', async (req, res) => {
+            const burger = req.body;
+            try {
+                const result = await burgerCollection.insertOne(burger);
+                res.status(201).send(result);
+            } catch (error) {
+                console.error('Error adding burger:', error);
+                res.status(500).send({ message: 'Error adding burger' });
+            }
+        });
         // POST: Save new order
         app.post("/orders", async (req, res) => {
             const order = req.body;
