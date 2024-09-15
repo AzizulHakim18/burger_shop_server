@@ -28,6 +28,7 @@ async function run() {
 
         const burgerCollection = client.db("burger_shop").collection("burgers")
         const orderCollection = client.db("burger_shop").collection("orders")
+        const userCollection = client.db("burger_shop").collection("users")
 
 
         // get all burgers
@@ -135,6 +136,48 @@ async function run() {
             const result = await orderCollection.insertOne(order);
             res.send(result);
         });
+
+
+
+
+        // Add User
+        app.post('/adduser', async (req, res) => {
+            const { name, email, role, permissions, imageUrl } = req.body;
+            try {
+                const newUser = {
+                    name,
+                    email,
+                    role,
+                    permissions,
+                    imageUrl // Handle image URLs or base64 strings here
+                };
+
+                // Insert user into the collection
+                const result = await userCollection.insertOne(newUser);
+
+                // Return the inserted user details
+                res.status(201).send({
+                    message: "User added successfully",
+                    user: { _id: result.insertedId, ...newUser }
+                });
+            } catch (error) {
+                console.error("Error adding user:", error);
+                res.status(500).send({ message: "Server error" });
+            }
+        });
+
+
+        // Get All Users
+        app.get('/serviceusers', async (req, res) => {
+            try {
+                const users = await userCollection.find({}).toArray();
+                res.send(users);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+                res.status(500).send({ message: "Server error" });
+            }
+        });
+
 
 
         // Send a ping to confirm a successful connection
