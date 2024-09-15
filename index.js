@@ -3,6 +3,7 @@ const cors = require('cors')
 require('dotenv').config()
 const port = process.env.PORT || 8000
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const { ObjectId } = require('mongodb');
 
 
 const app = express()
@@ -35,6 +36,66 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result)
         })
+        app.get('/burger/:id', async (req, res) => {
+            const { id } = req.params;
+            try {
+                // Convert the id from string to ObjectId
+                const burger = await burgerCollection.findOne({ _id: new ObjectId(id) });
+
+                if (!burger) {
+                    return res.status(404).send({ message: "Burger not found" });
+                }
+
+                res.send(burger);
+            } catch (error) {
+                console.error("Error fetching burger:", error);
+                res.status(500).send({ message: "Server error" });
+            }
+        });
+        app.put('/editburger/:id', async (req, res) => {
+            const { id } = req.params;
+            const updatedBurgerData = req.body;
+
+            try {
+                // Remove _id from the updatedBurgerData if it exists
+                const { _id, ...updateData } = updatedBurgerData;
+
+                // Convert the id to ObjectId and find the burger to update
+                const result = await burgerCollection.updateOne(
+                    { _id: new ObjectId(id) },  // Find the burger by ObjectId
+                    { $set: updateData }        // Update the burger data, excluding _id
+                );
+
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ message: "Burger not found" });
+                }
+
+                res.send({ message: "Burger updated successfully!" });
+            } catch (error) {
+                console.error("Error updating burger:", error);
+                res.status(500).send({ message: "Server error" });
+            }
+        });
+
+        app.delete('/burgers/:id', async (req, res) => {
+            const id = req.params.id;
+
+            try {
+                const result = await burgerCollection.deleteOne({ _id: new ObjectId(id) });
+
+                if (result.deletedCount === 1) {
+                    res.status(200).send({ message: 'Product deleted successfully' });
+                } else {
+                    res.status(404).send({ message: 'Product not found' });
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                res.status(500).send({ message: 'Error deleting product' });
+            }
+        });
+
+
+
         // Endpoint to get orders by email
         app.get('/orders', async (req, res) => {
             const email = req.query.email;
@@ -57,6 +118,7 @@ async function run() {
             }
         });
 
+        // add burger post method
         app.post('/addburger', async (req, res) => {
             const burger = req.body;
             try {
