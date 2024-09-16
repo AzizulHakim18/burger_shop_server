@@ -29,6 +29,7 @@ async function run() {
         const burgerCollection = client.db("burger_shop").collection("burgers")
         const orderCollection = client.db("burger_shop").collection("orders")
         const userCollection = client.db("burger_shop").collection("users")
+        const reviewCollection = client.db("burger_shop").collection("reviews")
 
 
         // get all burgers
@@ -153,6 +154,41 @@ async function run() {
             const orders = await orderCollection.find(query).toArray();
             res.json(orders);
         });
+
+
+        // POST: Save a new review for a burger
+        app.post('/reviews', async (req, res) => {
+            const { burgerId, review, email } = req.body;
+            try {
+                const reviewDoc = {
+                    burgerId,
+                    review,
+                    email,
+                    createdAt: new Date(),
+                };
+
+                const result = await reviewCollection.insertOne(reviewDoc);
+                res.status(201).send(result);
+            } catch (error) {
+                console.error('Error saving review:', error);
+                res.status(500).send({ message: 'Error saving review' });
+            }
+        });
+
+        // Get reviews for a specific burger
+        app.get('/reviews/:burgerId', async (req, res) => {
+            const { burgerId } = req.params;
+            try {
+                const reviews = await reviewCollection.find({ burgerId }).toArray();
+                res.send(reviews);
+            } catch (error) {
+                console.error('Error fetching reviews:', error);
+                res.status(500).send({ message: 'Error fetching reviews' });
+            }
+        });
+
+
+
         app.put("/admin/orders/:id/status", async (req, res) => {
             const orderId = req.params.id;
             const { status } = req.body;
