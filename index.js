@@ -225,6 +225,53 @@ async function run() {
         });
 
 
+        // Backend: Get Sales Data
+        app.get('/admin/sales', async (req, res) => {
+            try {
+                const orders = await orderCollection.find().toArray();
+
+                // Process data to calculate total sales per day
+                const salesData = orders.reduce((acc, order) => {
+                    const orderDate = new Date(order.orderDate).toLocaleDateString();
+                    const totalAmount = order.orderItems.reduce(
+                        (sum, item) => sum + (item.price * item.quantity),
+                        0
+                    );
+                    if (acc[orderDate]) {
+                        acc[orderDate] += totalAmount;
+                    } else {
+                        acc[orderDate] = totalAmount;
+                    }
+                    return acc;
+                }, {});
+
+                res.json(Object.keys(salesData).map(date => ({ date, totalSales: salesData[date] })));
+            } catch (error) {
+                res.status(500).send('Error fetching sales data');
+            }
+        });
+        // Backend: Get Product Sales Data
+        app.get('/admin/sales/product', async (req, res) => {
+            try {
+                const orders = await orderCollection.find().toArray();
+
+                // Aggregate sales by product
+                const productSales = orders.reduce((acc, order) => {
+                    order.orderItems.forEach(item => {
+                        if (acc[item.name]) {
+                            acc[item.name] += item.price * item.quantity;
+                        } else {
+                            acc[item.name] = item.price * item.quantity;
+                        }
+                    });
+                    return acc;
+                }, {});
+
+                res.json(Object.keys(productSales).map(product => ({ product, totalSales: productSales[product] })));
+            } catch (error) {
+                res.status(500).send('Error fetching product sales data');
+            }
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
