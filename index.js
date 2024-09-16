@@ -130,6 +130,8 @@ async function run() {
                 res.status(500).send({ message: 'Error adding burger' });
             }
         });
+
+
         // POST: Save new order
         app.post("/orders", async (req, res) => {
             const order = req.body;
@@ -137,6 +139,50 @@ async function run() {
             res.send(result);
         });
 
+
+        // Fetch orders by email (for customer-specific view)
+        app.get("/admin/orders", async (req, res) => {
+            const cursor = orderCollection.find();
+            const result = await cursor.toArray();
+            res.send(result)
+        });
+        // Fetch orders by email (for customer-specific view)
+        app.get("/admin/orders/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { "customerInfo.email": email };
+            const orders = await orderCollection.find(query).toArray();
+            res.json(orders);
+        });
+        app.put("/admin/orders/:id/status", async (req, res) => {
+            const orderId = req.params.id;
+            const { status } = req.body;
+
+            try {
+                const result = await orderCollection.updateOne(
+                    { _id: new ObjectId(orderId) },  // Correct usage of ObjectId
+                    { $set: { status } }             // Update the status field
+                );
+
+                if (result.matchedCount === 0) {
+                    res.status(404).json({ success: false, message: "Order not found" });
+                } else {
+                    res.json({ success: true, message: "Order status updated", result });
+                }
+            } catch (error) {
+                res.status(500).json({ success: false, message: "Error updating order status", error });
+            }
+        });
+
+        // Delete order
+        app.delete("/admin/orders/:id", async (req, res) => {
+            const orderId = req.params.id;
+            try {
+                const result = await orderCollection.deleteOne({ _id: new ObjectId(orderId) });
+                res.json({ success: true, message: "Order deleted", result });
+            } catch (error) {
+                res.status(500).json({ success: false, message: "Error deleting order", error });
+            }
+        });
 
 
 
