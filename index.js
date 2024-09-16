@@ -259,6 +259,23 @@ async function run() {
                 res.status(500).send({ message: "Server error" });
             }
         });
+        // Delete a User by ID
+        app.delete('/serviceusers/:id', async (req, res) => {
+            const userId = req.params.id;
+            try {
+                const result = await userCollection.deleteOne({ _id: new ObjectId(userId) });
+
+                if (result.deletedCount === 1) {
+                    res.send({ message: 'User deleted successfully' });
+                } else {
+                    res.status(404).send({ message: 'User not found' });
+                }
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                res.status(500).send({ message: "Server error" });
+            }
+        });
+
 
 
         // Backend: Get Sales Data
