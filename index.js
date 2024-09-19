@@ -5,43 +5,14 @@ const port = process.env.PORT || 8000
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const { ObjectId } = require('mongodb');
 // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const helmet = require('helmet');
-
-
 
 
 
 const app = express()
-app.use(cors({
-    origin: 'http://localhost:5173', // Allow requests from your frontend domain
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
-    credentials: true // If you're using cookies or authorization headers
-}));
+
+app.use(cors());
 app.use(express.json())
-app.use(
-    helmet.contentSecurityPolicy({
-        directives: {
-            defaultSrc: ["'none'"],
-            imgSrc: ["'self'", "data:", "cdn.snipcart.com"],
-            scriptSrc: ["'self'"], // Adjust for other script sources if needed
-            styleSrc: ["'self'"],  // Adjust for other style sources if needed
-        },
-    })
-);
 
-
-const allowCors = fn => async (req, res) => {
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');  // Change this to your frontend URL for better security
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
-    return await fn(req, res);
-}
 
 
 
@@ -76,7 +47,7 @@ async function run() {
         })
         // for pagination
         // get all burgers with pagination
-        app.get("/burgerspagination", allowCors(async (req, res) => {
+        app.get("/burgerspagination", async (req, res) => {
             const page = parseInt(req.query.page) || 1; // default to page 1
             const limit = parseInt(req.query.limit) || 6; // default to 5 burgers per page
             const skip = (page - 1) * limit;
@@ -93,9 +64,9 @@ async function run() {
             } catch (error) {
                 res.status(500).send({ message: 'Error fetching burgers', error });
             }
-        }));
+        });
 
-        app.get('/burger/:id', allowCors(async (req, res) => {
+        app.get('/burger/:id', async (req, res) => {
             const { id } = req.params;
             try {
                 // Convert the id from string to ObjectId
@@ -110,11 +81,11 @@ async function run() {
                 console.error("Error fetching burger:", error);
                 res.status(500).send({ message: "Server error" });
             }
-        }));
+        });
 
 
 
-        app.put('/editburger/:id', allowCors(async (req, res) => {
+        app.put('/editburger/:id', async (req, res) => {
             const { id } = req.params;
             const updatedBurgerData = req.body;
 
@@ -137,9 +108,9 @@ async function run() {
                 console.error("Error updating burger:", error);
                 res.status(500).send({ message: "Server error" });
             }
-        }));
+        });
 
-        app.delete('/burgers/:id', allowCors(async (req, res) => {
+        app.delete('/burgers/:id', async (req, res) => {
             const id = req.params.id;
 
             try {
@@ -154,12 +125,12 @@ async function run() {
                 console.error('Error deleting product:', error);
                 res.status(500).send({ message: 'Error deleting product' });
             }
-        }));
+        });
 
 
 
         // Endpoint to get orders by email
-        app.get('/orders', allowCors(async (req, res) => {
+        app.get('/orders', async (req, res) => {
             const email = req.query.email;
 
             if (!email) {
@@ -178,7 +149,7 @@ async function run() {
                 console.error("Error fetching orders:", error);
                 res.status(500).send({ message: "Server error, unable to fetch orders" });
             }
-        }));
+        });
 
         // online payment
         // app.post('/onlinepayment', async (req, res) => {
@@ -219,7 +190,7 @@ async function run() {
 
 
         // add burger post method
-        app.post('/addburger', allowCors(async (req, res) => {
+        app.post('/addburger', async (req, res) => {
             const burger = req.body;
             try {
                 const result = await burgerCollection.insertOne(burger);
@@ -228,36 +199,36 @@ async function run() {
                 console.error('Error adding burger:', error);
                 res.status(500).send({ message: 'Error adding burger' });
             }
-        }));
+        });
 
 
         // POST: Save new order
-        app.post("/orders", allowCors(async (req, res) => {
+        app.post("/orders", async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
             res.send(result);
-        }));
+        });
 
 
         // Fetch orders by email (for customer-specific view)
-        app.get("/admin/orders", allowCors(async (req, res) => {
+        app.get("/admin/orders", async (req, res) => {
             const cursor = orderCollection.find();
             const result = await cursor.toArray();
             res.send(result)
-        }));
+        });
 
 
         // Fetch orders by email (for customer-specific view)
-        app.get("/admin/orders/:email", allowCors(async (req, res) => {
+        app.get("/admin/orders/:email", async (req, res) => {
             const email = req.params.email;
             const query = { "customerInfo.email": email };
             const orders = await orderCollection.find(query).toArray();
             res.json(orders);
-        }));
+        });
 
 
         // POST: Save a new review for a burger
-        app.post('/reviews', allowCors(async (req, res) => {
+        app.post('/reviews', async (req, res) => {
             const { burgerId, review, email } = req.body;
             try {
                 const reviewDoc = {
@@ -273,10 +244,10 @@ async function run() {
                 console.error('Error saving review:', error);
                 res.status(500).send({ message: 'Error saving review' });
             }
-        }));
+        });
 
         // Get reviews for a specific burger
-        app.get('/reviews/:burgerId', allowCors(async (req, res) => {
+        app.get('/reviews/:burgerId', async (req, res) => {
             const { burgerId } = req.params;
             try {
                 const reviews = await reviewCollection.find({ burgerId }).toArray();
@@ -285,11 +256,11 @@ async function run() {
                 console.error('Error fetching reviews:', error);
                 res.status(500).send({ message: 'Error fetching reviews' });
             }
-        }));
+        });
 
 
 
-        app.put("/admin/orders/:id/status", allowCors(async (req, res) => {
+        app.put("/admin/orders/:id/status", async (req, res) => {
             const orderId = req.params.id;
             const { status } = req.body;
 
@@ -307,10 +278,10 @@ async function run() {
             } catch (error) {
                 res.status(500).json({ success: false, message: "Error updating order status", error });
             }
-        }));
+        });
 
         // Delete order
-        app.delete("/admin/orders/:id", allowCors(async (req, res) => {
+        app.delete("/admin/orders/:id", async (req, res) => {
             const orderId = req.params.id;
             try {
                 const result = await orderCollection.deleteOne({ _id: new ObjectId(orderId) });
@@ -318,12 +289,12 @@ async function run() {
             } catch (error) {
                 res.status(500).json({ success: false, message: "Error deleting order", error });
             }
-        }));
+        });
 
 
 
         // Add User
-        app.post('/adduser', allowCors(async (req, res) => {
+        app.post('/adduser', async (req, res) => {
             const { name, email, role, permissions, imageUrl } = req.body;
             try {
                 const newUser = {
@@ -346,11 +317,11 @@ async function run() {
                 console.error("Error adding user:", error);
                 res.status(500).send({ message: "Server error" });
             }
-        }));
+        });
 
 
         // Get All Users
-        app.get('/serviceusers', allowCors(async (req, res) => {
+        app.get('/serviceusers', async (req, res) => {
             try {
                 const users = await userCollection.find({}).toArray();
                 res.send(users);
@@ -358,11 +329,11 @@ async function run() {
                 console.error("Error fetching users:", error);
                 res.status(500).send({ message: "Server error" });
             }
-        }));
+        });
 
 
         // Delete a User by ID
-        app.delete('/serviceusers/:id', allowCors(async (req, res) => {
+        app.delete('/serviceusers/:id', async (req, res) => {
             const userId = req.params.id;
             try {
                 const result = await userCollection.deleteOne({ _id: new ObjectId(userId) });
@@ -376,12 +347,12 @@ async function run() {
                 console.error("Error deleting user:", error);
                 res.status(500).send({ message: "Server error" });
             }
-        }));
+        });
 
 
 
         // Backend: Get Sales Data
-        app.get('/admin/sales', allowCors(async (req, res) => {
+        app.get('/admin/sales', async (req, res) => {
             try {
                 const orders = await orderCollection.find().toArray();
 
@@ -404,12 +375,12 @@ async function run() {
             } catch (error) {
                 res.status(500).send('Error fetching sales data');
             }
-        }));
+        });
 
 
 
         // Backend: Get Product Sales Data
-        app.get('/admin/sales/product', allowCors(async (req, res) => {
+        app.get('/admin/sales/product', async (req, res) => {
             try {
                 const orders = await orderCollection.find().toArray();
 
@@ -429,7 +400,7 @@ async function run() {
             } catch (error) {
                 res.status(500).send('Error fetching product sales data');
             }
-        }));
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
@@ -447,5 +418,5 @@ app.get("/", (req, res) => {
 })
 
 app.listen(port, () => {
-    console.log("burger app is running on the port");
+    console.log("burger app is running on the port", port);
 })
